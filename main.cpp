@@ -68,6 +68,23 @@ int main() {
 		}
 		std::cout << "There are " << controllerIndices.size() << " controllers." << std::endl;
 
+		std::string input;
+		do {
+			//for(std::vector<int>::iterator i=controllerIndices.begin(); i != controllerIndices.end(); ++i) {
+			//for(int i=1; i<3; ++i) {
+				vr::VRControllerState_t state;
+				vr::VRControllerState_t *pstate = &state;
+				//int a = *i;
+				//std::cout << a << std::endl;
+				//ivrSystem->GetControllerState(i,pstate);
+				std::cout << state.ulButtonPressed << std::endl;
+
+				vr::TrackedDeviceIndex_t index = 1;
+				ivrSystem->GetControllerState(index,pstate);
+			//}
+			getline(std::cin,input);
+		} while(input != "exit");
+			
 		vr::VR_Shutdown();
 	} else {
 		std::cout << "No HMD was found in the system, quitting app" << std::endl;
