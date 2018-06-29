@@ -35,7 +35,9 @@ void catalogDevices(vr::IVRSystem* ivrSystem, Device* devices, bool printOutput)
 
 	for (int i = 0; i < vr::k_unMaxTrackedDeviceCount; ++i) {
 		if (printOutput) {
-			std::cout << "Tracked Device " << i << " has type " << TrackedDeviceTypes[ivrSystem->GetTrackedDeviceClass(i)] << "." << std::endl;
+			if (ivrSystem->GetTrackedDeviceClass(i) != 0) {
+				std::cout << "Tracked Device " << i << " has type " << TrackedDeviceTypes[ivrSystem->GetTrackedDeviceClass(i)] << "." << std::endl;
+			}
 		}
 		(*(devices + i)).index = i;
 		(*(devices + i)).type = ivrSystem->GetTrackedDeviceClass(i);
@@ -73,8 +75,8 @@ int main() {
 
 		// Initialize system
 		vr::HmdError error;
-		//char stopSegFault[2048];
-		vr::IVRSystem* ivrSystem = vr::VR_Init(&error, vr::VRApplication_Other/*, stopSegFault*/);
+		vr::IVRSystem* ivrSystem = vr::VR_Init(&error, vr::VRApplication_Other);
+		std::cout << "Error: " << vr::VR_GetVRInitErrorAsSymbol(error) << std::endl;
 		std::cout << "Pointer to the IVRSystem is " << ivrSystem << std::endl;
 
 		catalogDevices(ivrSystem, devices, false);
@@ -85,6 +87,7 @@ int main() {
 			if (input == "update") {
 				catalogDevices(ivrSystem, devices, true);
 				catalogControllers(devices, true);
+		ivrSystem->ResetSeatedZeroPose();
 			}
 			else if (input == "track") {
 				while (true) {
@@ -94,9 +97,9 @@ int main() {
 						vr::TrackedDevicePose_t pose;
 						std::cout << "Controller " << *itr << "    ";
 
-						ivrSystem->GetControllerStateWithPose(vr::TrackingUniverseSeated, *itr, &state, sizeof(state), &pose);
+						ivrSystem->GetControllerStateWithPose(vr::TrackingUniverseRawAndUncalibrated, *itr, &state, sizeof(state), &pose);
 
-						
+
 						for (int button = 0; button < 4; ++button) {
 							if ((state.ulButtonPressed & buttonBitmasks[button]) != 0) {
 								states[button] = Button_Pressed;
@@ -108,8 +111,30 @@ int main() {
 								states[button] = Button_Released;
 							}
 
-							std::cout << buttonNames[button] << ": " << stateNames[states[button]] << "      ";
+							std::cout << buttonNames[button] << ": " << stateNames[states[button]] << "  ";
 						}
+
+						std::string matrix = "";
+						matrix += "{";
+						for (int r = 0; r < 3; ++r) {
+							matrix += "{";
+							for (int c = 0; c < 4; ++c) {
+								matrix += std::to_string(pose.mDeviceToAbsoluteTracking.m[r][c]);
+								if (c != 3) {
+									matrix += ", ";
+								}
+							}
+							matrix += "}";
+							if (r != 2) {
+								matrix += ", ";
+							}
+						}
+						matrix += "}";
+						for (int i = matrix.size(); i < 138; ++i) {
+							matrix += " ";
+						}
+						std::cout << matrix << "                                                  ";
+						//std::cout << "ETrackingResult: " << pose.eTrackingResult << "   ";
 					}
 
 					std::cout << "\r";
